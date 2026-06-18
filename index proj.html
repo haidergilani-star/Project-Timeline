@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BSS MENA — BEAMS360 Implementation Timeline</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff; --surface: #ffffff; --surface2: #f0f4ff; --border: #e2e8f0;
+    --text: #111827; --text2: #374151; --text3: #6b7280; --accent: #2563eb;
+  }
+  body { font-family: "Inter", sans-serif; background: #f8faff; color: var(--text); min-height: 100vh; }
+
+  /* ── HEADER ── */
+  .site-header { background: #ffffff; border-bottom: 3px solid #2563eb; padding: 1.1rem 2rem; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(37,99,235,0.08); }
+  .header-inner { max-width: 1600px; margin: 0 auto; }
+  .header-top { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+  .header-title { font-size: 1.1rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+  .header-title span { color: var(--accent); }
+  .header-sub { font-size: 0.7rem; color: var(--text3); margin-top: 0.15rem; }
+  .golive-badge { display: inline-flex; align-items: center; gap: 0.4rem; background: #f0fdf4; border: 1.5px solid #15803d; color: #15803d; font-size: 0.71rem; font-weight: 700; padding: 0.35rem 0.85rem; border-radius: 20px; white-space: nowrap; }
+  .golive-badge::before { content: "●"; font-size: 0.5rem; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  /* ── STATS ── */
+  .stats-bar { display: flex; gap: 0.6rem; margin-top: 0.75rem; flex-wrap: wrap; }
+  .stat { background: #f0f4ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 0.35rem 0.8rem; display: flex; align-items: center; gap: 0.4rem; font-size: 0.74rem; }
+  .stat-num { font-size: 0.95rem; font-weight: 700; font-family: "JetBrains Mono", monospace; }
+  .stat.total .stat-num { color: var(--accent); }
+  .stat.prog .stat-num  { color: #1d4ed8; }
+  .stat.plan .stat-num  { color: #6b7280; }
+  .stat.rev  .stat-num  { color: #b45309; }
+  .stat-label { color: var(--text2); }
+
+  /* ── TABS ── */
+  .tab-bar { display: flex; gap: 0; margin-top: 0.75rem; border-bottom: 2px solid var(--border); }
+  .tab-btn { padding: 0.45rem 1.2rem; font-size: 0.78rem; font-weight: 600; color: var(--text3); cursor: pointer; border: none; background: none; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s; }
+  .tab-btn:hover { color: var(--text2); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── FILTERS ── */
+  .filters { display: flex; gap: 0.4rem; margin-top: 0.65rem; flex-wrap: wrap; align-items: center; }
+  .filters label { font-size: 0.68rem; color: var(--text3); font-weight: 600; margin-right: 0.15rem; }
+  .filter-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text2); font-size: 0.7rem; font-weight: 500; padding: 0.24rem 0.6rem; border-radius: 20px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .filter-btn:hover, .filter-btn.active { border-color: var(--accent); color: var(--accent); background: #eff6ff; font-weight: 600; }
+  .search-box { background: var(--surface); border: 1px solid var(--border); color: var(--text); font-size: 0.74rem; font-family: "Inter",sans-serif; padding: 0.24rem 0.7rem; border-radius: 20px; outline: none; width: 190px; }
+  .search-box:focus { border-color: var(--accent); box-shadow: 0 0 0 3px #dbeafe; }
+  .search-box::placeholder { color: var(--text3); }
+
+  /* ── MAIN ── */
+  .main { max-width: 1600px; margin: 0 auto; padding: 1.1rem 2rem 4rem; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ── PHASE SECTIONS (Timeline) ── */
+  .phase-section { margin-bottom: 0.65rem; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .phase-header { display: flex; align-items: center; gap: 0.6rem; padding: 0.55rem 0.9rem; cursor: pointer; user-select: none; transition: filter 0.15s; }
+  .phase-header:hover { filter: brightness(0.96); }
+  .phase-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .phase-name { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+  .phase-count { font-size: 0.66rem; margin-left: auto; font-family: "JetBrains Mono",monospace; opacity: 0.6; }
+  .phase-chevron { font-size: 0.6rem; transition: transform 0.2s; opacity: 0.5; }
+  .phase-section.collapsed .phase-chevron { transform: rotate(-90deg); }
+  .phase-section.collapsed .phase-body { display: none; }
+
+  /* ── TIMELINE TABLE ── */
+  .phase-body { overflow-x: auto; }
+  table.tl-table { width: 100%; border-collapse: collapse; font-size: 0.77rem; min-width: 1000px; }
+  table.tl-table thead th { background: #f9fafb; color: var(--text3); font-size: 0.64rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.42rem 0.65rem; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  table.tl-table thead th:nth-child(1) { width: 50px; }
+  table.tl-table thead th:nth-child(3) { width: 98px; }
+  table.tl-table thead th:nth-child(4) { width: 98px; }
+  table.tl-table thead th:nth-child(5) { width: 108px; }
+  table.tl-table thead th:nth-child(6) { width: 108px; }
+  table.tl-table thead th:nth-child(7) { width: 72px; }
+  table.tl-table tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  table.tl-table tbody tr:last-child { border-bottom: none; }
+  table.tl-table tbody tr:hover { background: #f0f4ff !important; }
+  table.tl-table tbody tr.hidden-row { display: none; }
+  table.tl-table tbody tr:nth-child(even) { background: #fafbfc; }
+  table.tl-table tbody tr:nth-child(odd)  { background: #ffffff; }
+  td.ref   { font-family: "JetBrains Mono",monospace; font-size: 0.66rem; color: var(--text3); white-space: nowrap; padding: 0.48rem 0.65rem; vertical-align: top; }
+  td.task  { font-weight: 500; color: var(--text); min-width: 210px; padding: 0.48rem 0.65rem; vertical-align: top; }
+  td.date  { font-family: "JetBrains Mono",monospace; font-size: 0.7rem; color: var(--text2); white-space: nowrap; padding: 0.48rem 0.65rem; vertical-align: top; }
+  td.owner { font-size: 0.7rem; color: var(--text2); padding: 0.48rem 0.65rem; vertical-align: top; }
+  td.pred  { font-family: "JetBrains Mono",monospace; font-size: 0.66rem; color: var(--text3); padding: 0.48rem 0.65rem; vertical-align: top; }
+  td.notes { font-size: 0.7rem; color: var(--text2); line-height: 1.5; font-style: italic; min-width: 290px; max-width: 430px; padding: 0.48rem 0.65rem; vertical-align: top; }
+  .status-badge { display: inline-block; font-size: 0.64rem; font-weight: 600; padding: 0.16rem 0.5rem; border-radius: 20px; white-space: nowrap; letter-spacing: 0.02em; }
+
+  /* ── GANTT ── */
+  .gantt-wrap { overflow-x: auto; background: #fff; border-radius: 10px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .gantt-table { border-collapse: collapse; font-size: 0.75rem; white-space: nowrap; }
+  .gantt-table th, .gantt-table td { border: 1px solid #e5e7eb; }
+
+  /* Header rows */
+  .gantt-month-header th { background: #1F3864; color: #fff; font-size: 0.72rem; font-weight: 600; text-align: center; padding: 0.4rem 0.5rem; letter-spacing: 0.04em; }
+  .gantt-month-header th.task-col { text-align: left; padding-left: 0.75rem; background: #1F3864; }
+  .gantt-week-header th { background: #2E5F9E; color: #fff; font-size: 0.62rem; font-weight: 500; text-align: center; padding: 0.3rem 0.2rem; }
+  .gantt-week-header th.task-col { text-align: left; padding-left: 0.75rem; background: #374B6E; font-size: 0.68rem; }
+
+  /* Phase section rows */
+  .gantt-phase-row td { font-weight: 700; font-size: 0.72rem; color: #fff; padding: 0.32rem 0.75rem; letter-spacing: 0.04em; text-transform: uppercase; }
+
+  /* Task rows */
+  .gantt-task-row td.g-ref { font-family: "JetBrains Mono",monospace; font-size: 0.64rem; color: #9ca3af; text-align: center; padding: 0.28rem 0.4rem; background: #fafafa; width: 42px; }
+  .gantt-task-row td.g-task { font-size: 0.72rem; color: #1a1d23; padding: 0.28rem 0.75rem; min-width: 220px; max-width: 260px; overflow: hidden; text-overflow: ellipsis; background: #fff; font-weight: 500; }
+  .gantt-task-row:nth-child(even) td.g-ref,
+  .gantt-task-row:nth-child(even) td.g-task { background: #fafbfc; }
+  .gantt-task-row:hover td { background: #f0f4ff !important; }
+
+  /* Bar cells */
+  .gantt-task-row td.g-week { width: 32px; min-width: 32px; max-width: 32px; padding: 3px 1px; }
+  .g-bar { height: 14px; border-radius: 3px; width: 100%; }
+  .g-empty { background: #f5f5f5; height: 14px; }
+  .g-empty.alt { background: #efefef; }
+  .today-cell { border-left: 2px solid #f97316 !important; }
+
+  /* Legend */
+  .gantt-legend { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; padding: 0.75rem 1rem; border-top: 1px solid var(--border); font-size: 0.7rem; color: var(--text2); }
+  .g-leg { display: flex; align-items: center; gap: 0.35rem; }
+  .g-leg-bar { width: 24px; height: 10px; border-radius: 2px; }
+  .today-line-leg { width: 3px; height: 14px; background: #f97316; border-radius: 1px; }
+
+  .legend-bar { margin-top: 1rem; padding: 0.8rem 1rem; background: #fff; border: 1px solid var(--border); border-radius: 10px; display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+  .legend-label { font-size: 0.65rem; color: var(--text3); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  @media (max-width: 768px) { .main { padding: 1rem; } .site-header { padding: 1rem; } }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-top">
+      <div>
+        <div class="header-title">BSS MENA — <span>BEAMS360</span> Implementation Timeline</div>
+        <div class="header-sub">6 Phases &nbsp;·&nbsp; Senior PM Reviewed</div>
+      </div>
+      <div class="golive-badge">TARGET GO LIVE &nbsp; 13 Aug 2026</div>
+    </div>
+    <div class="stats-bar" id="statsBar"></div>
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('timeline',this)">📋 &nbsp;Timeline</button>
+      <button class="tab-btn" onclick="switchTab('gantt',this)">📊 &nbsp;Gantt Chart</button>
+    </div>
+    <div class="filters" id="filterBar">
+      <label>Filter:</label>
+      <button class="filter-btn active" onclick="filterStatus('all',this)">All</button>
+      <button class="filter-btn" onclick="filterStatus('In Progress',this)">In Progress</button>
+      <button class="filter-btn" onclick="filterStatus('Planned',this)">Planned</button>
+      <button class="filter-btn" onclick="filterStatus('Under review',this)">Under Review</button>
+      <button class="filter-btn" onclick="filterStatus('Ready to use',this)">Ready to Use</button>
+      <input class="search-box" type="text" placeholder="🔍  Search tasks…" oninput="searchTasks(this.value)"/>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="tab-content active" id="tab-timeline"></div>
+  <div class="tab-content" id="tab-gantt"></div>
+</main>
+
+<script>
+const PHASES = [
+  { id:"dev",    label:"Development Phase",                       color:"#1e40af", bg:"#eff6ff" },
+  { id:"config", label:"Configuration & Migration Phase",         color:"#1d4ed8", bg:"#dbeafe" },
+  { id:"uat",    label:"UAT & Training Phase",                    color:"#1e3a8a", bg:"#e0e7ff" },
+  { id:"fin",    label:"Financial Transition & Validation Phase", color:"#1d4ed8", bg:"#eff6ff" },
+  { id:"cut",    label:"Go-Live Preparation & Cutover Phase",     color:"#1e40af", bg:"#dbeafe" },
+  { id:"go",     label:"Go Live & Support Phase",                 color:"#1e3a8a", bg:"#e0e7ff" },
+];
+const STATUS_STYLE = {
+  "In Progress":  { bg:"#eff6ff", fg:"#1d4ed8" },
+  "Planned":      { bg:"#f3f4f6", fg:"#6b7280" },
+  "Ready to use": { bg:"#f0fdf4", fg:"#15803d" },
+  "Under review": { bg:"#fffbeb", fg:"#b45309" },
+  "TBD":          { bg:"#f9fafb", fg:"#6b7280" },
+};
+const BAR_COLORS = {
+  "In Progress":  "#3b82f6",
+  "Planned":      "#94a3b8",
+  "Ready to use": "#22c55e",
+  "Under review": "#f59e0b",
+  "TBD":          "#d1d5db",
+};
+
+const DATA = {
+  dev: [
+    ["1.1","SIS","22/06/2026","","","In Progress","Dev Team","—",""],
+    ["1.2","Student Attendance","22/06/2026","","","In Progress","Dev Team","—",""],
+    ["1.3","HR","22/06/2026","","","In Progress","Dev Team","—",""],
+    ["1.4","Petty Cash","22/06/2026","","","In Progress","Dev Team","—",""],
+    ["1.5","Fee","25/06/2026","","","In Progress","Dev Team","—",""],
+    ["1.6","GL Accounting","25/06/2026","","","In Progress","Dev Team","—",""],
+    ["1.7","Curriculum & Lesson Plan","30/06/2026","","","Ready to use","Dev Team","—",""],
+    ["1.8","TEF","Ready","","","Ready to use","Dev Team","—","Module is pre-configured and available for immediate use."],
+    ["1.9","Student Support","Ready","","","Ready to use","Dev Team","—","Module is pre-configured and available for immediate use."],
+    ["1.10","Library","12/07/2026","","","Under review","Dev Team","—","Implementation partner to share blueprint with BSS MENA before development can commence."],
+    ["1.11","Payroll","15/07/2026","","","In Progress","Dev Team","—",""],
+    ["1.12","Fixed Assets","20/07/2026","","","Under review","Dev Team","—","Requirements under review. Date at risk if not finalised by 29 June 2026."],
+    ["1.13","Mobile App","17/07/2026","","","In Progress","Dev Team","—",""],
+    ["1.14","Transportation","TBD","","","In Progress","Dev Team","—","Blueprint under review. Requires immediate escalation."],
+    ["1.15","SMS Module","TBD","","","In Progress","Dev Team","—","Blueprint under review. Requires immediate escalation."],
+    ["1.16","Gradebook","31/08/2026","","","Under review","Dev Team","—",""],
+  ],
+  config: [
+    ["2.1","SIS Module Configured & Validated","","22/06/2026","23/06/2026","Planned","CS & QA","1.1","Commences immediately following SIS Development Phase completion"],
+    ["2.2","Fee Structure Configured & Validated","","25/06/2026","25/06/2026","Planned","CS & QA","1.5","Aligned to Fee module Development Phase completion date"],
+    ["2.3","HR & Payroll Modules Configured & Validated","","16/07/2026","23/07/2026","Planned","CS & QA","1.3, 1.11","Commences after both HR and Payroll Development Phase completion"],
+    ["2.4","Curriculum, Timetable & Related Modules Configured","","01/07/2026","07/07/2026","Planned","CS & QA","1.7","Commences after Curriculum & Lesson Plan Development Phase completion"],
+    ["2.5","GL Accounting & Petty Cash Configured & Validated","","26/06/2026","26/06/2026","Planned","CS & QA","1.4, 1.6","Follows GL Accounting and Petty Cash Development Phase completion"],
+    ["2.6","Student Master Data Migrated & Verified","","24/06/2026","07/07/2026","Planned","CS & QA","2.1","Allow 2 weeks post SIS configuration for data cleanse and field mapping"],
+    ["2.7","HR Master Data Migrated & Verified","","23/07/2026","30/07/2026","Planned","CS & QA","2.3","Allow 1 week post HR and Payroll configuration"],
+    ["2.8","Receivables & Petty Cash Account Data Migrated & Verified","","27/06/2026","10/07/2026","Planned","CS & QA","2.5","Allow 2 weeks post GL Accounting and Petty Cash configuration"],
+    ["2.9","Inventory Master Data Migrated & Verified","","08/07/2026","17/07/2026","Planned","CS & QA","2.4","Allow 2 weeks post module configuration"],
+    ["2.10","Data Migration Validated & Signed Off by Client","","25/07/2026","25/07/2026","Planned","CS + Client","2.6–2.9","All streams validated. Formal client sign-off required before UAT entry."],
+  ],
+  uat: [
+    ["4.1","System Walkthrough & Demo — BSS MENA Regional Office","","14/07/2026","14/07/2026","Planned","CS","2.10","Attendance mandatory for all key stakeholders and module owners"],
+    ["4.2","UAT & Training Session — BSS Newlands Dubai","","15/07/2026","16/07/2026","Planned","CS & QA","4.1","2 days per location. Includes hands-on walkthrough and end-user training"],
+    ["4.3","UAT & Training Session — BSS Al Ain Dubai","","17/07/2026","18/07/2026","Planned","CS & QA","4.2",""],
+    ["4.4","UAT & Training Session — BSS Sharjah","","19/07/2026","20/07/2026","Planned","CS & QA","4.3",""],
+    ["4.5","UAT & Training Session — BSS Oman","","21/07/2026","22/07/2026","Planned","CS & QA","4.4","Remote if travel not feasible. Confirm logistics in advance."],
+    ["4.6","UAT & Training Session — BSS MENA Academics & HR","","23/07/2026","24/07/2026","Planned","CS & QA","4.5","Critical — HR and Academic staff must be trained prior to Go-Live"],
+    ["4.7","Defect Triage, Prioritisation & Resolution","","25/07/2026","27/07/2026","Planned","Dev + PM","4.6","All P1 and P2 defects must be resolved before UAT sign-off"],
+    ["4.8","UAT Completion Review & Formal Client Sign-off","","28/07/2026","28/07/2026","Planned","CS + Client","4.7","Mandatory gate before Financial Transition & Validation Phase"],
+  ],
+  fin: [
+    ["5.1","Validate Student Receivable Balances","","29/07/2026","30/07/2026","Planned","CS + Client","4.8","Snapshot date 30 June 2026. Migration after UAT sign-off."],
+    ["5.2","Validate Employee Balances","","29/07/2026","30/07/2026","Planned","CS + Client","4.8","Executed in parallel with task 5.1"],
+    ["5.3","Validate Petty Cash G/L Balances","","29/07/2026","30/07/2026","Planned","CS + Client","4.8","Executed in parallel with task 5.1"],
+    ["5.4","Load Opening Balances to Pre-Production Environment","","31/07/2026","31/07/2026","Planned","CS + Client","5.1–5.3","Dry-run to validate migration scripts prior to live cutover"],
+    ["5.5","Opening Balance Reconciliation & Client Finance Review","","01/08/2026","03/08/2026","Planned","CS + Client + QA","5.4","Client finance team to reconcile all balances against source records"],
+    ["5.6","Opening Balance Migration — Client Sign-off","","04/08/2026","04/08/2026","Planned","CS","5.5","Mandatory gate before proceeding to Cutover Phase"],
+  ],
+  cut: [
+    ["6.1","Cutover Plan Finalised & Approved","","05/08/2026","05/08/2026","Planned","CS","5.6","Includes: cutover runbook, rollback plan, go/no-go criteria, RACI matrix"],
+    ["6.3","Finalise User Access, Roles & Permissions","","06/08/2026","06/08/2026","Planned","CS","6.1","All production accounts and permissions configured before cutover window"],
+    ["6.7","Final Data Migration to Production","","10/08/2026","10/08/2026","Planned","CS + PM","6.5","Final migration using validated and signed-off scripts"],
+    ["6.8","Final Reconciliation & Data Validation in Production","","11/08/2026","11/08/2026","Planned","CS & QA","6.7","Verify counts, totals and spot-checks. Resolve discrepancies before Go-Live."],
+    ["6.9","Conduct Go-Live Readiness Review","","12/08/2026","12/08/2026","Planned","CS + Client","6.8","Final checkpoint — all systems, teams and support structures confirmed ready"],
+  ],
+  go: [
+    ["7.1","Go Live — Enable Production Environment","","13/08/2026","13/08/2026","Planned","Dev + Infra","6.9","Subject to formal Go/No-Go approval from project steering committee"],
+    ["7.3","Hypercare Support","","13/08/2026","15/08/2026","Planned","CS + QA + PM","7.1","All leads on-site or on-call for immediate issue resolution during Week 1"],
+    ["7.5","Monitor System Performance & Stability","","13/08/2026","15/08/2026","Planned","DEV + INFRA","7.1","Daily monitoring for first 4 weeks post Go-Live"],
+    ["7.6","Post Go-Live Issue Review","","15/08/2026","15/08/2026","Planned","DEV + INFRA","7.4","Classify each issue as a bug (fix) or change request (new scope)"],
+    ["7.7","Project Closure & Final Client Sign-off","","15/08/2026","15/08/2026","Planned","CS + Client","7.6","Lessons learned, closure report, final invoice, BAU handover"],
+  ],
+};
+
+// Gantt task data: [phase_id, ref, label, start_date_str, end_date_str, status]
+const GANTT_TASKS = [
+  ["dev","1.1","SIS","2026-05-01","2026-06-22","In Progress"],
+  ["dev","1.2","Student Attendance","2026-05-01","2026-06-22","In Progress"],
+  ["dev","1.3","HR","2026-05-01","2026-06-22","In Progress"],
+  ["dev","1.4","Petty Cash","2026-05-01","2026-06-22","In Progress"],
+  ["dev","1.5","Fee","2026-05-01","2026-06-25","In Progress"],
+  ["dev","1.6","GL Accounting","2026-05-01","2026-06-25","In Progress"],
+  ["dev","1.7","Curriculum & Lesson Plan","2026-05-01","2026-06-30","In Progress"],
+  ["dev","1.8","TEF","2026-06-01","2026-06-18","Ready to use"],
+  ["dev","1.9","Student Support","2026-06-01","2026-06-18","Ready to use"],
+  ["dev","1.10","Library","2026-06-01","2026-07-12","Under review"],
+  ["dev","1.11","Payroll","2026-05-01","2026-07-15","In Progress"],
+  ["dev","1.12","Fixed Assets","2026-05-01","2026-07-20","Under review"],
+  ["dev","1.13","Mobile App","2026-05-01","2026-07-17","In Progress"],
+  ["dev","1.14","Transportation","2026-06-01","2026-08-31","In Progress"],
+  ["dev","1.15","SMS Module","2026-06-01","2026-08-31","In Progress"],
+  ["dev","1.16","Gradebook","2026-05-01","2026-08-31","In Progress"],
+  ["config","2.1","Config: SIS","2026-06-22","2026-06-23","Planned"],
+  ["config","2.2","Config: Fee","2026-06-25","2026-06-25","Planned"],
+  ["config","2.3","Config: HR & Payroll","2026-07-16","2026-07-23","Planned"],
+  ["config","2.4","Config: Curriculum","2026-07-01","2026-07-07","Planned"],
+  ["config","2.5","Config: GL & Petty Cash","2026-06-26","2026-06-26","Planned"],
+  ["config","2.6","Migration: Student Data","2026-06-24","2026-07-07","Planned"],
+  ["config","2.7","Migration: HR Data","2026-07-23","2026-07-30","Planned"],
+  ["config","2.8","Migration: Receivables","2026-06-27","2026-07-10","Planned"],
+  ["config","2.9","Migration: Inventory","2026-07-08","2026-07-17","Planned"],
+  ["config","2.10","Data Migration Sign-off","2026-07-25","2026-07-25","Planned"],
+  ["uat","4.1","System Walkthrough","2026-07-14","2026-07-14","Planned"],
+  ["uat","4.2","UAT: BSS Newlands Dubai","2026-07-15","2026-07-16","Planned"],
+  ["uat","4.3","UAT: BSS Al Ain Dubai","2026-07-17","2026-07-18","Planned"],
+  ["uat","4.4","UAT: BSS Sharjah","2026-07-19","2026-07-20","Planned"],
+  ["uat","4.5","UAT: BSS Oman","2026-07-21","2026-07-22","Planned"],
+  ["uat","4.6","UAT: BSS MENA Academics & HR","2026-07-23","2026-07-24","Planned"],
+  ["uat","4.7","Defect Triage & Resolution","2026-07-25","2026-07-27","Planned"],
+  ["uat","4.8","UAT Sign-off","2026-07-28","2026-07-28","Planned"],
+  ["fin","5.1","Validate Student Balances","2026-07-29","2026-07-30","Planned"],
+  ["fin","5.2","Validate Employee Balances","2026-07-29","2026-07-30","Planned"],
+  ["fin","5.3","Validate Petty Cash Balances","2026-07-29","2026-07-30","Planned"],
+  ["fin","5.4","Load Opening Balances","2026-07-31","2026-07-31","Planned"],
+  ["fin","5.5","Balance Reconciliation","2026-08-01","2026-08-03","Planned"],
+  ["fin","5.6","Balance Sign-off","2026-08-04","2026-08-04","Planned"],
+  ["cut","6.1","Cutover Plan Approved","2026-08-05","2026-08-05","Planned"],
+  ["cut","6.3","User Access & Roles","2026-08-06","2026-08-06","Planned"],
+  ["cut","6.7","Final Migration to Production","2026-08-10","2026-08-10","Planned"],
+  ["cut","6.8","Final Reconciliation","2026-08-11","2026-08-11","Planned"],
+  ["cut","6.9","Go-Live Readiness Review","2026-08-12","2026-08-12","Planned"],
+  ["go","7.1","GO LIVE","2026-08-13","2026-08-13","Planned"],
+  ["go","7.3","Hypercare Support","2026-08-13","2026-08-15","Planned"],
+  ["go","7.5","System Monitoring","2026-08-13","2026-08-15","Planned"],
+  ["go","7.6","Post Go-Live Review","2026-08-15","2026-08-15","Planned"],
+  ["go","7.7","Project Closure","2026-08-15","2026-08-15","Planned"],
+];
+
+const TODAY = new Date("2026-06-18");
+
+// Generate weekly columns Jun 15 - Nov 2
+function getWeeks() {
+  const weeks = [];
+  let d = new Date("2026-06-15");
+  const end = new Date("2026-11-02");
+  while (d <= end) {
+    weeks.push(new Date(d));
+    d.setDate(d.getDate() + 7);
+  }
+  return weeks;
+}
+
+function parseDate(s) {
+  const [y,m,d] = s.split("-").map(Number);
+  return new Date(y, m-1, d);
+}
+
+function monthLabel(d) {
+  return d.toLocaleString("default",{month:"short"}) + " " + d.getFullYear();
+}
+
+let currentFilter = "all", currentSearch = "";
+
+function statusBadge(s) {
+  const st = STATUS_STYLE[s] || {bg:"#f9fafb",fg:"#6b7280"};
+  return `<span class="status-badge" style="background:${st.bg};color:${st.fg};border:1px solid ${st.fg}30">${s}</span>`;
+}
+
+function buildStats() {
+  let total=0,prog=0,plan=0,rev=0;
+  Object.values(DATA).forEach(rows => rows.forEach(r => {
+    total++; if(r[5]==="In Progress")prog++; if(r[5]==="Planned")plan++; if(r[5]==="Under review")rev++;
+  }));
+  document.getElementById("statsBar").innerHTML = `
+    <div class="stat total"><span class="stat-num">${total}</span><span class="stat-label">total tasks</span></div>
+    <div class="stat prog"><span class="stat-num">${prog}</span><span class="stat-label">in progress</span></div>
+    <div class="stat plan"><span class="stat-num">${plan}</span><span class="stat-label">planned</span></div>
+    <div class="stat rev"><span class="stat-num">${rev}</span><span class="stat-label">under review</span></div>
+    <div class="stat"><span class="stat-num" style="color:#0E6655">6</span><span class="stat-label">phases</span></div>`;
+}
+
+function buildTimeline() {
+  const cont = document.getElementById("tab-timeline");
+  cont.innerHTML = "";
+  PHASES.forEach(phase => {
+    const rows = DATA[phase.id] || [];
+    const isDev = phase.id === "dev";
+    const sec = document.createElement("div");
+    sec.className = "phase-section"; sec.id = "phase-" + phase.id;
+    sec.style.borderColor = phase.color + "30";
+    sec.innerHTML = `
+      <div class="phase-header" style="background:${phase.bg}" onclick="togglePhase('${phase.id}')">
+        <div class="phase-dot" style="background:${phase.color}"></div>
+        <span class="phase-name" style="color:${phase.color}">${phase.label}</span>
+        <span class="phase-count" style="color:${phase.color}">${rows.length} tasks</span>
+        <span class="phase-chevron" style="color:${phase.color}">▼</span>
+      </div>
+      <div class="phase-body">
+        <table class="tl-table">
+          <thead><tr>
+            <th>Ref</th><th>Task / Milestone</th>
+            ${isDev ? "<th>Tentative Delivery Date</th>" : "<th>Start Date</th><th>End Date</th>"}
+            <th>Status</th><th>Owner</th><th>Pred.</th><th>Notes</th>
+          </tr></thead>
+          <tbody id="tl-tbody-${phase.id}"></tbody>
+        </table>
+      </div>`;
+    cont.appendChild(sec);
+    const tbody = document.getElementById("tl-tbody-"+phase.id);
+    rows.forEach(r => {
+      const [ref,task,target,start,end,status,owner,pred,notes] = r;
+      const tr = document.createElement("tr");
+      tr.dataset.status = status;
+      tr.dataset.text = (ref+task+owner+notes).toLowerCase();
+      tr.innerHTML = `
+        <td class="ref">${ref}</td>
+        <td class="task">${task}</td>
+        ${isDev ? `<td class="date">${target}</td>` : `<td class="date">${start}</td><td class="date">${end}</td>`}
+        <td style="padding:0.48rem 0.65rem">${statusBadge(status)}</td>
+        <td class="owner">${owner}</td>
+        <td class="pred">${pred}</td>
+        <td class="notes">${notes}</td>`;
+      tbody.appendChild(tr);
+    });
+  });
+
+  const legend = document.createElement("div");
+  legend.className = "legend-bar";
+  legend.innerHTML = `
+    <span class="legend-label">Status:</span>
+    ${Object.entries(STATUS_STYLE).map(([k,v])=>`<span style="display:flex;align-items:center;gap:.3rem;font-size:.7rem;color:var(--text2)"><span class="status-badge" style="background:${v.bg};color:${v.fg};border:1px solid ${v.fg}30">${k}</span></span>`).join("")}
+    <span class="legend-label" style="margin-left:1rem">Note:</span>
+    <span style="font-size:.68rem;color:var(--text3)">Development Phase shows Target Date · All other phases show Start &amp; End Dates</span>`;
+  cont.appendChild(legend);
+}
+
+function buildGantt() {
+  const weeks = getWeeks();
+  const cont = document.getElementById("tab-gantt");
+  cont.innerHTML = "";
+
+  const wrap = document.createElement("div");
+  wrap.className = "gantt-wrap";
+
+  const table = document.createElement("table");
+  table.className = "gantt-table";
+
+  // Month header
+  const monthGroups = {};
+  weeks.forEach((w,wi) => {
+    const key = w.getFullYear()+"-"+w.getMonth();
+    if (!monthGroups[key]) monthGroups[key] = { label: monthLabel(w), count: 0 };
+    monthGroups[key].count++;
+  });
+
+  const mRow = document.createElement("tr");
+  mRow.className = "gantt-month-header";
+  const mTh = document.createElement("th");
+  mTh.className = "task-col";
+  mTh.colSpan = 2;
+  mTh.style.minWidth = "270px";
+  mTh.textContent = "Task";
+  mRow.appendChild(mTh);
+  Object.values(monthGroups).forEach(mg => {
+    const th = document.createElement("th");
+    th.colSpan = mg.count;
+    th.textContent = mg.label;
+    mRow.appendChild(th);
+  });
+  table.appendChild(mRow);
+
+  // Week header
+  const wRow = document.createElement("tr");
+  wRow.className = "gantt-week-header";
+  const wTh1 = document.createElement("th");
+  wTh1.className = "task-col";
+  wTh1.textContent = "Ref";
+  wTh1.style.width = "44px";
+  const wTh2 = document.createElement("th");
+  wTh2.className = "task-col";
+  wTh2.textContent = "Task / Milestone";
+  wTh2.style.minWidth = "220px";
+  wRow.appendChild(wTh1); wRow.appendChild(wTh2);
+  weeks.forEach(w => {
+    const th = document.createElement("th");
+    th.textContent = (w.getDate()) + "/" + (w.getMonth()+1);
+    th.style.width = "32px";
+    th.style.minWidth = "32px";
+    // today marker header
+    const wEnd = new Date(w); wEnd.setDate(wEnd.getDate()+6);
+    if (TODAY >= w && TODAY <= wEnd) th.style.borderLeft = "2px solid #f97316";
+    wRow.appendChild(th);
+  });
+  table.appendChild(wRow);
+
+  // Tasks
+  let currentPhase = null;
+  GANTT_TASKS.forEach((task, ti) => {
+    const [phId, ref, label, startStr, endStr, status] = task;
+    const phase = PHASES.find(p => p.id === phId);
+
+    // Phase header row
+    if (phId !== currentPhase) {
+      currentPhase = phId;
+      const phRow = document.createElement("tr");
+      phRow.className = "gantt-phase-row";
+      const phTd = document.createElement("td");
+      phTd.colSpan = 2 + weeks.length;
+      phTd.style.background = "#2563eb";
+      phTd.textContent = phase.label.toUpperCase();
+      phRow.appendChild(phTd);
+      table.appendChild(phRow);
+    }
+
+    const tStart = parseDate(startStr);
+    const tEnd   = parseDate(endStr);
+    const barColor = BAR_COLORS[status] || "#94a3b8";
+
+    const tr = document.createElement("tr");
+    tr.className = "gantt-task-row";
+
+    const tdRef = document.createElement("td");
+    tdRef.className = "g-ref";
+    tdRef.textContent = ref;
+    tr.appendChild(tdRef);
+
+    const tdTask = document.createElement("td");
+    tdTask.className = "g-task";
+    tdTask.textContent = label;
+    tdTask.title = label;
+    tr.appendChild(tdTask);
+
+    weeks.forEach((w, wi) => {
+      const wEnd = new Date(w); wEnd.setDate(wEnd.getDate()+6);
+      const td = document.createElement("td");
+      td.className = "g-week";
+      const isToday = TODAY >= w && TODAY <= wEnd;
+      if (isToday) td.classList.add("today-cell");
+
+      const overlap = tStart <= wEnd && tEnd >= w;
+      if (overlap) {
+        const bar = document.createElement("div");
+        bar.className = "g-bar";
+        bar.style.background = barColor;
+        bar.style.opacity = "0.85";
+        td.appendChild(bar);
+      } else {
+        const empty = document.createElement("div");
+        empty.className = wi % 2 === 0 ? "g-empty" : "g-empty alt";
+        td.appendChild(empty);
+      }
+      tr.appendChild(td);
+    });
+    table.appendChild(tr);
+  });
+
+  wrap.appendChild(table);
+
+  // Gantt legend
+  const leg = document.createElement("div");
+  leg.className = "gantt-legend";
+  leg.innerHTML = `
+    <span style="font-size:.68rem;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Legend:</span>
+    ${Object.entries(BAR_COLORS).map(([k,v])=>`<span class="g-leg"><span class="g-leg-bar" style="background:${v}"></span><span>${k}</span></span>`).join("")}
+    <span class="g-leg"><span class="today-line-leg"></span><span>Today (18 Jun 2026)</span></span>`;
+  wrap.appendChild(leg);
+  cont.appendChild(wrap);
+}
+
+function switchTab(tab, btn) {
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+  document.getElementById("tab-"+tab).classList.add("active");
+  document.getElementById("filterBar").style.display = tab === "timeline" ? "flex" : "none";
+}
+
+function togglePhase(id) { document.getElementById("phase-"+id).classList.toggle("collapsed"); }
+
+function filterStatus(status, btn) {
+  currentFilter = status;
+  document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active"); applyFilters();
+}
+function searchTasks(val) { currentSearch = val.toLowerCase(); applyFilters(); }
+function applyFilters() {
+  document.querySelectorAll("#tab-timeline tbody tr").forEach(tr => {
+    const ms = currentFilter==="all" || tr.dataset.status===currentFilter;
+    const ss = !currentSearch || tr.dataset.text.includes(currentSearch);
+    tr.classList.toggle("hidden-row", !(ms && ss));
+  });
+  PHASES.forEach(phase => {
+    const tbody = document.getElementById("tl-tbody-"+phase.id);
+    if(!tbody) return;
+    const visible = tbody.querySelectorAll("tr:not(.hidden-row)").length;
+    const countEl = document.querySelector(`#phase-${phase.id} .phase-count`);
+    if(countEl) countEl.textContent = visible+" tasks";
+    const sec = document.getElementById("phase-"+phase.id);
+    if(sec) sec.style.display = visible===0?"none":"";
+  });
+}
+
+buildStats();
+buildTimeline();
+buildGantt();
+</script>
+</body>
+</html>
